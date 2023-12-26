@@ -1,0 +1,89 @@
+import re
+from nltk.chat import Chat
+from spellchecker import SpellChecker
+from responses import pairs, reflections, get_meaning, get_synonyms, get_antonyms
+
+def process_input(chatbot_instance, spell_checker, user_input):
+    """
+    Process user input and return the appropriate response.
+
+    Args:
+        chatbot_instance (nltk.chat.Chat): The chatbot instance.
+        spell_checker (SpellChecker): The spell checker instance.
+        user_input (str): The user's input.
+
+    Returns:
+        str: The response based on the processed input.
+    """
+    try:
+        # Check if the user wants to quit the chat
+        if user_input.lower() == "quit":
+            print("Goodbye!")
+            return None
+
+        # Split the input into words using the split() function
+        input_words = user_input.split()
+
+        # If the user input ends with a question mark, get a response from the Chat instance
+        if user_input.endswith("?"):
+            return chatbot_instance.respond(user_input)
+
+        # Check if the user is asking for the meaning, synonyms, or antonyms of a word
+        requested_info = None
+        for key in ["meaning", "synonyms", "antonyms"]:
+            if key in input_words:
+                requested_info = key
+                break
+
+        if requested_info:
+            word = input_words[-1].rstrip("s")  # Remove any trailing 's'
+            if requested_info == "meaning":
+                return get_meaning(word)
+            elif requested_info == "synonyms":
+                return get_synonyms(word)
+            elif requested_info == "antonyms":
+                return get_antonyms(word)
+
+        # Use the spell checker on the input
+        corrected_input = spell_checker.correction(user_input)
+
+        # Ask for confirmation if a correction is suggested
+        if corrected_input != user_input:
+            print(f"Did you mean: {corrected_input}? (yes/no)")
+            confirmation = input().lower()
+            if confirmation == 'yes':
+                user_input = corrected_input
+
+        # Get a general response from the Chat instance
+        return chatbot_instance.respond(user_input)
+
+    except Exception as e:
+        # Handle unexpected exceptions
+        return f"An error occurred: {str(e)}"
+
+def chat():
+    """
+    Main function to run the chatbot.
+    """
+    print("Hi! I am a chatbot created by Sumaiya. How can I help you?")
+    chatbot_instance = Chat(pairs, reflections)
+    spell_checker = SpellChecker(language='en')
+
+    while True:
+        try:
+            user_input = input("> ")
+        except KeyboardInterrupt:
+            print("Goodbye!")
+            break
+
+        # Process the user input and get the response
+        response = process_input(chatbot_instance, spell_checker, user_input)
+
+        # Check if the user decided to quit or if there was an error
+        if response is None or "An error occurred" in response:
+            break
+
+        print(response)
+
+if __name__ == "__main__":
+    chat()
