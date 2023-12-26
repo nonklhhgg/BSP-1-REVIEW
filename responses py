@@ -1,0 +1,95 @@
+import re
+from random import sample
+from nltk.corpus import wordnet
+from spellchecker import SpellChecker
+
+# Reflections map used for transforming input phrases
+reflections = {
+    "i am": "you are",
+    "i was": "you were",
+    "i": "you",
+    "i'm": "you are",
+    "i'd": "you would",
+    "i've": "you have",
+    "i'll": "you will",
+    "my": "your",
+    "you are": "I am",
+    "you were": "I was",
+    "you've": "I have",
+    "you'll": "I will",
+    "your": "my",
+    "yours": "mine",
+    "you": "me",
+    "me": "you",
+    "from you": "from me"
+}
+
+# Predefined pairs of patterns and corresponding responses
+patterns_responses = [
+    (r"my name is (.*)", ["Hello %1, how are you today?", ]),
+    (r"hi|hey|hello", ["Hello", "Hey there", ]),
+    (r"what is your name|who are you|who made you", ["I am a bot created by Sumaiya!", ]),
+    (r"I am fine|i am doing good|fine|good", ["Nice!", "Good to hear that!", "That's good", ]),
+    # ... (other patterns and responses)
+    (r"quit|goodbye", ["Goodbye! Take care. See you soon :)", "It was nice talking to you. See you soon :)"]),
+    (r"what is the meaning of (.*)", ["Let me look that up for you...", "The meaning of %1 is:"]),
+    (r"what are the synonyms of (.*)", ["Let me find some synonyms for %1...", "Synonyms for %1 are:"]),
+    (r"what are the antonyms of (.*)", ["Let me find some antonyms for %1...", "Antonyms for %1 are:"]),
+    (r"(.*)(thanks|thank you)", ["You're welcome!", "No problem!"]),
+    (r"(.*)", ["Sorry, I don't understand what you are talking about."])
+]
+
+spell = SpellChecker()
+spell_cache = {}
+
+def process_input(input_text):
+    """
+    Process user input and generate an appropriate response.
+
+    Args:
+    input_text (str): User input text.
+
+    Returns:
+    str: Generated response.
+    """
+    # Spell checking with caching
+    if input_text not in spell_cache:
+        corrected_input = spell.correction(input_text)
+        spell_cache[input_text] = corrected_input
+    else:
+        corrected_input = spell_cache[input_text]
+
+    if corrected_input != input_text:
+        user_input = input(f"Did you mean '{corrected_input}'? ")
+        if user_input.lower() in ["yes", "yes i mean that"]:
+            input_text = corrected_input
+            return "I've corrected the spelling. What else would you like to know?"
+
+    # Iterate through predefined patterns and responses
+    for pattern, responses in patterns_responses:
+        match = re.match(pattern, input_text, re.IGNORECASE)
+        if match:
+            return sample(responses, 1)[0].format(*[reflections.get(match.group(i), match.group(i)) for i in range(1, len(match.groups()) + 1)])
+
+    return "Sorry, I couldn't understand your input. Can you please rephrase or ask something else?"
+
+# The rest of the code (get_meaning, get_synonyms, get_antonyms, etc.) remains unchanged
+# ...
+
+# Main loop for interacting with the chatbot
+def chat():
+    """
+    Main loop for interacting with the chatbot.
+    """
+    print("Hello! I'm your chatbot. You can ask me about words, their meanings, synonyms, and antonyms.")
+    while True:
+        user_input = input("You: ")
+        if user_input.lower() in ['quit', 'exit', 'goodbye', 'bye']:
+            print("Goodbye! Have a great day.")
+            break
+        response = process_input(user_input)
+        if response:
+            print("Bot:", response)
+
+if __name__ == "__main__":
+    chat()
